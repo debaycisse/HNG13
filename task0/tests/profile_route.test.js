@@ -8,6 +8,12 @@ const api = supertest(app)
 
 // Required endpoint
 describe('/me', async () => {
+  let response = null
+
+  beforeEach(async () => {
+    response = await api.get('/me')
+  })
+
   describe('endpoint is required', async () => {
     // to be reachable at /me route
     test('to be reachable at /me', async () => {
@@ -25,21 +31,34 @@ describe('/me', async () => {
 
     // to integrate with the Cat Facts API to fetch dynamic cat facts
     test('to integrate with the Cat Facts API to fetch dynamic cat facts', async () => {
-      const response = await api
-        .get('/me')
+      // const response = await api
+      //   .get('/me')
 
       const responseData = response.body
       assert(Object.keys(responseData).includes('fact'))
 
       const catFact = responseData.fact
       assert(catFact !== undefined)
+
+      assert(catFact.length > 3)
     })
   })
 
   describe('field specification', async () => {
     // status — Must always be the string "success"
+    test('status field must always have the string "success" value',
+      async () => {
+        // const response = await api.get('/me')
+        assert.strictEqual(
+          response.body.status, "success"
+        )
+    })
 
     // user.email — Your personal email address
+    test('user.email field must have an email as value',
+      async () => {
+        const emailRegex = /^[1-9]|[a-z]|[A-Z]+/
+    })
 
     // user.name — Your full name
     
@@ -50,31 +69,31 @@ describe('/me', async () => {
     // fact — A random cat fact fetched from the Cat Facts API
   })
 
-  describe('timestamp field or property', async () => {
-    // must reflect the current UTC time at the moment of the request
+  // describe('timestamp field or property', async () => {
+  //   // must reflect the current UTC time at the moment of the request
 
-    // use ISO 8601 format for consistency
+  //   // use ISO 8601 format for consistency
 
-    // should update with every new request
-  })
+  //   // should update with every new request
+  // })
 
-  describe('cat facts api integration ensures', async () => {
-    // to use https://catfact.ninja/fact
+  // describe('cat facts api integration ensures', async () => {
+  //   // to use https://catfact.ninja/fact
 
-    // to fetch a new cat fact on every request to /me
+  //   // to fetch a new cat fact on every request to /me
 
-    // handle potential API failures gracefully 
+  //   // handle potential API failures gracefully 
 
-    // set appropriate timeout values for the external API call
-  })
+  //   // set appropriate timeout values for the external API call
+  // })
 
-  describe('error handling', async () => {
-    // handles API failure
+  // describe('error handling', async () => {
+  //   // handles API failure
 
-    // handles network error and timeout
+  //   // handles network error and timeout
 
-    // returns appriopriate HTTP status code
-  })
+  //   // returns appriopriate HTTP status code
+  // })
 
 })
 
