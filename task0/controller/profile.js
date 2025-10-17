@@ -16,6 +16,8 @@ profileRouter
 
     // set timer for this request as required
     const fact = await catFact()
-
-    
+    userData.fact = fact
+    response.status(200).json(userData)
   })
+
+module.exports = profileRouter
