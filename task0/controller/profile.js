@@ -6,17 +6,20 @@ profileRouter
     const userData = {
       "status": "success",
       "user": {
-        "email": "debaycisse@gmail.com",  // process.env.email
-        "name": "Azeez Adebayo",          // process.env.name
-        "stack": "Node.js/Express"       // process.env.stack
+        "email": process.env.EMAIL,
+        "name": process.env.NAME,
+        "stack": process.env.STACK,
       },
       "timestamp": (new Date()).toISOString(),
       "fact": ""
     }
-
     // set timer for this request as required
-    const fact = await catFact()
+    const { fact, url } = await catFact()
     userData.fact = fact
+    if (process.env.NODE_ENV === 'test') {
+      userData.url = url
+    }
+    
     response.status(200).json(userData)
   })
 
