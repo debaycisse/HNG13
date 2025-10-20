@@ -1,4 +1,4 @@
-const { describe, beforeEach, test } = require('node:test')
+const { describe, beforeEach, after, test } = require('node:test')
 const assert = require('node:assert')
 const supertest = require('supertest')  // TODO: install
 const app = require('../app') // TODO: create the app.js file as the root
@@ -77,6 +77,7 @@ describe('string analyzer', () => {
           .expect(422)
       }
     )
+  })
 
   describe('GET request', () => {
     test(
@@ -108,5 +109,116 @@ describe('string analyzer', () => {
     )
   })
 
+  describe('GET all Strings with Filtering', () => {
+    test(
+      'returns 200 status for valid query parameters',
+      async () => {
+        await api
+          .get('/strings?is_palindrome=true&min_length=5\
+            &max_length=20&word_count=2&contains_character=a'
+          )
+          .expect(200)
+      }
+    )
+
+    test(
+      'returns 400 status for invalid query parameters values or types',
+      async () => {
+        await api
+          .get('/strings?is_palindromest=true&min_length=5&max_length=20&word_count=2&contains_character=a'
+          )
+          .expect(400)
+      }
+    )
   })
+
+  describe('Natural Language Filtering, such as', () => {
+    beforeEach(async () => {
+      // delete all existing records
+      // post two or more records
+    })
+
+    test(
+      '"all single word palindromic strings" returns 200 status',
+      async () => {
+        const response = await api
+          .get('/strings/filter-by-natural-language?query=all%20single%20word%20palindromic%20strings')
+          .expect(200)
+
+        assert(response.body.includes('data'))
+      }
+    )
+
+    test(
+      '"strings longer than 10 characters" return 200 status',
+      async () => {
+        const response = await api
+          .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20characters')
+          .expect(200)
+
+        assert(response.body.includes('data'))
+      }
+    )
+
+    test(
+      '"palindromic strings that contain the first vowel" returns 200 status',
+      async () => {
+        const response = await api
+          .get('/strings/filter-by-natural-language?palindromic%20strings%20that%20contain%20the%20the%20first%20vowel')
+          .expect(200)
+
+        assert(response.body.includes('data'))
+      }
+    )
+
+    test(
+      '"strings containing the letter z" returns 200 status',
+      async () => {
+        const response = await api
+          .get('/strings/filter-by-natural-language?strings%20containing%20the%20letter%20z')
+          .expect(200)
+  
+        assert(response.body.includes('data'))
+      }
+    )
+
+    test(
+      'Invalid natural language query returns 400 status',
+      async () => {
+        await api
+          .get('/strings/filter-by-natural-language?this query is invalid')
+          .expect(400)
+      }
+    )
+
+    test(
+      'Conflicting query should return 422 status',
+      async () => {
+        await api
+          .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20and%20lesser%20than%205')
+          .expect(422)
+      }
+    )
+  })
+
+  describe('DELETE String', () => {
+    test(
+      'for existing, valid String should return 204 status',
+      async () => {
+        const string_to_delete = await api
+          .post('/strings')
+          .send({
+            value: 'the string to delete'
+          })
+          .expect(201)
+        
+        await api
+          .delete(`/strings/${string_to_delete.body.value}`)
+          .expect(204)
+      }
+    )
+  })
+  // after(async () => {
+  //   // dicsconnect the db connection
+  // })
 })
