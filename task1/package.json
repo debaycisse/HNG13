@@ -1,0 +1,15 @@
+{
+  "name": "task1",
+  "version": "1.0.0",
+  "description": "task 1 implements /strings and /strings/string_value routes. This endpoints processes strings and return the length, palindrome status, unique characters, word counts, hash value, and character frequency maps of the given string",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Azeez Adebayo",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.1.0",
+    "supertest": "^7.1.4"
+  }
+}
