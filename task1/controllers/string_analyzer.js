@@ -1,9 +1,20 @@
 const stringAnalyzerRoutes = require('express').Router()
-const config = require('../utils/config')
-const { createHash, stringExist } = require('../utils/util_helper')
+
+const {
+  createHash, stringExist, is_palindrome, wordCount,
+  countUniqueCharacter, createCharFreqMap, formatString
+} = require('../utils/util_helper')
+// console.log('router module loading after util helper...');
+
+const {
+  insertString,
+  insertStringProperties,
+  findString
+} = require('../utils/db_helper')
+// console.log('loading stringAnalyzerRoutes module');
 
 stringAnalyzerRoutes
-  .post((req, res) => {
+  .post('', async (req, res) => {
     const body = req.body
     
     if (!body.value) {
@@ -32,14 +43,31 @@ stringAnalyzerRoutes
         })
     }
 
-    // insert into string_analyzer_property firstly
-      // create the data for the string_analyzer_property
-      // and call insertStringProperties() from db_helper
+    const stringValue = body.value
 
-    // then insert into string_analizer, using the id of the string_analyzer_property
-       // create the data for the string_analyzer,
-       // don't forget to pick the id from the above string_analyzer_property insert
-      // and call insertString() from db_helper
+    const sapObj = {
+      length: stringValue.length,
+      is_palindrome: is_palindrome(stringValue) === true ? 1 : 0,
+      unique_characters: countUniqueCharacter(stringValue),
+      word_count: wordCount(stringValue),
+      sha256_hash: createHash(stringValue),
+      character_frequency_map: JSON
+        .stringify(createCharFreqMap(stringValue))
+    }
+    const newSapObj = insertStringProperties(sapObj)
+
+    const saObj = {
+      id: createHash(stringValue),
+      value: stringValue,
+      properties: newSapObj,
+      created_at: (new Date()).toISOString()
+    }
+    insertString(saObj)
+
+    const createdSaObj = findString(saObj.id)
+    res
+      .status(201)
+      .json(formatString(createdSaObj))
   })
 
 module.exports = {

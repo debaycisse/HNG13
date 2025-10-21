@@ -4,7 +4,7 @@
   "description": "task 1 implements /strings and /strings/string_value routes. This endpoints processes strings and return the length, palindrome status, unique characters, word counts, hash value, and character frequency maps of the given string",
   "main": "index.js",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development node index.js",
+    "dev": "cross-env NODE_ENV=development node --watch index.js",
     "test": "cross-env NODE_ENV=test node index.js",
     "start": "cross-env NODE_ENV=production node index.js"
   },
@@ -13,6 +13,7 @@
   "dependencies": {
     "better-sqlite3": "^12.4.1",
     "cross-env": "^10.1.0",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0"
   },
   "devDependencies": {

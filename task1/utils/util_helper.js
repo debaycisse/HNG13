@@ -1,5 +1,7 @@
 const crypto = require('crypto')
+
 const { findString } = require('./db_helper')
+// console.log('util helper after db_helper import');
 
 const reverse = (string) => {
   let reversedString = ''
@@ -58,10 +60,35 @@ const stringExist = (hashValue) => {
   return stringRecord !== undefined
 }
 
+const wordCount = (stringValue) => {
+  const wordRegex = /((\w+\s)|(\w+))/g
+  const stringArray = stringValue.match(wordRegex)
+  return stringArray.length
+}
+
+const formatString = (stringDataObj) => {
+  return {
+    id: stringDataObj.id,
+    value: stringDataObj.value,
+    properties: {
+      length: stringDataObj.length,
+      is_palindrome: stringDataObj.is_palindrome === 1 ? true : false,
+      unique_characters: stringDataObj.unique_characters,
+      word_count: stringDataObj.word_count,
+      sha256_hash: stringDataObj.sha256_hash,
+      character_frequency_map: JSON
+        .parse(stringDataObj.character_frequency_map)
+    },
+    created_at: stringDataObj.created_at
+  }
+}
+
 module.exports = {
   is_palindrome,
   countUniqueCharacter,
   createHash,
   createCharFreqMap,
-  stringExist
+  stringExist,
+  wordCount,
+  formatString
 }

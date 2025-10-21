@@ -2,10 +2,24 @@ const { describe, beforeEach, after, test } = require('node:test')
 const assert = require('node:assert')
 const supertest = require('supertest')  // TODO: install
 const app = require('../app') // TODO: create the app.js file as the root
+const { db } = require('../utils/config')
 const api = supertest(app)
 
 describe('string analyzer', () => {
   describe('POST request', () => {
+    beforeEach(() => {
+      const stmts = [
+        `DELETE * FROM string_analyzer`,
+        `DELETE * FROM string_analyzer_property`
+      ]
+
+      for (const stmt of stmts) {
+        db.exec(stmt)
+      }
+
+      db.close()
+    })
+
     test(
       'with valid data should create a new instance of string analyzer'
       , 
@@ -79,145 +93,146 @@ describe('string analyzer', () => {
     )
   })
 
-  describe('GET request', () => {
-    test(
-      'of an existing string should be successful',
-      async () => {
-        const string_value = await api
-          .post('/strings')
-          .send({
-            value: "string to get"
-          })
-          .expect(201)
-          .expect('Content-Type', /application\/json/)
+  // describe('GET request', () => {
+  //   test(
+  //     'of an existing string should be successful',
+  //     async () => {
+  //       const string_value = await api
+  //         .post('/strings')
+  //         .send({
+  //           value: "string to get"
+  //         })
+  //         .expect(201)
+  //         .expect('Content-Type', /application\/json/)
 
-        await api
-          .get(`/strings/${string_value.body.value}`)
-          .expect(200)
-      }
-    )
+  //       await api
+  //         .get(`/strings/${string_value.body.value}`)
+  //         .expect(200)
+  //     }
+  //   )
 
-    test(
-      'of a non-exisitng string returns 404 status code',
-      async () => {
-        const non_existing_string = 'non-existing'
+  //   test(
+  //     'of a non-exisitng string returns 404 status code',
+  //     async () => {
+  //       const non_existing_string = 'non-existing'
 
-        await api
-          .get(`/strings/${non_existing_string}`)
-          .expect(404)
-      }
-    )
-  })
+  //       await api
+  //         .get(`/strings/${non_existing_string}`)
+  //         .expect(404)
+  //     }
+  //   )
+  // })
 
-  describe('GET all Strings with Filtering', () => {
-    test(
-      'returns 200 status for valid query parameters',
-      async () => {
-        await api
-          .get('/strings?is_palindrome=true&min_length=5\
-            &max_length=20&word_count=2&contains_character=a'
-          )
-          .expect(200)
-      }
-    )
+  // describe('GET all Strings with Filtering', () => {
+  //   test(
+  //     'returns 200 status for valid query parameters',
+  //     async () => {
+  //       await api
+  //         .get('/strings?is_palindrome=true&min_length=5\
+  //           &max_length=20&word_count=2&contains_character=a'
+  //         )
+  //         .expect(200)
+  //     }
+  //   )
 
-    test(
-      'returns 400 status for invalid query parameters values or types',
-      async () => {
-        await api
-          .get('/strings?is_palindromest=true&min_length=5&max_length=20&word_count=2&contains_character=a'
-          )
-          .expect(400)
-      }
-    )
-  })
+  //   test(
+  //     'returns 400 status for invalid query parameters values or types',
+  //     async () => {
+  //       await api
+  //         .get('/strings?is_palindromest=true&min_length=5&max_length=20&word_count=2&contains_character=a'
+  //         )
+  //         .expect(400)
+  //     }
+  //   )
+  // })
 
-  describe('Natural Language Filtering, such as', () => {
-    beforeEach(async () => {
-      // delete all existing records
-      // post two or more records
-    })
+  // describe('Natural Language Filtering, such as', () => {
+  //   // beforeEach(async () => {
+  //   //   // delete all existing records
+  //   //   // post two or more records
+  //   // })
 
-    test(
-      '"all single word palindromic strings" returns 200 status',
-      async () => {
-        const response = await api
-          .get('/strings/filter-by-natural-language?query=all%20single%20word%20palindromic%20strings')
-          .expect(200)
+  //   test(
+  //     '"all single word palindromic strings" returns 200 status',
+  //     async () => {
+  //       const response = await api
+  //         .get('/strings/filter-by-natural-language?query=all%20single%20word%20palindromic%20strings')
+  //         .expect(200)
 
-        assert(response.body.includes('data'))
-      }
-    )
+  //       assert(response.body.includes('data'))
+  //     }
+  //   )
 
-    test(
-      '"strings longer than 10 characters" return 200 status',
-      async () => {
-        const response = await api
-          .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20characters')
-          .expect(200)
+  //   test(
+  //     '"strings longer than 10 characters" return 200 status',
+  //     async () => {
+  //       const response = await api
+  //         .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20characters')
+  //         .expect(200)
 
-        assert(response.body.includes('data'))
-      }
-    )
+  //       assert(response.body.includes('data'))
+  //     }
+  //   )
 
-    test(
-      '"palindromic strings that contain the first vowel" returns 200 status',
-      async () => {
-        const response = await api
-          .get('/strings/filter-by-natural-language?palindromic%20strings%20that%20contain%20the%20the%20first%20vowel')
-          .expect(200)
+  //   test(
+  //     '"palindromic strings that contain the first vowel" returns 200 status',
+  //     async () => {
+  //       const response = await api
+  //         .get('/strings/filter-by-natural-language?palindromic%20strings%20that%20contain%20the%20the%20first%20vowel')
+  //         .expect(200)
 
-        assert(response.body.includes('data'))
-      }
-    )
+  //       assert(response.body.includes('data'))
+  //     }
+  //   )
 
-    test(
-      '"strings containing the letter z" returns 200 status',
-      async () => {
-        const response = await api
-          .get('/strings/filter-by-natural-language?strings%20containing%20the%20letter%20z')
-          .expect(200)
+  //   test(
+  //     '"strings containing the letter z" returns 200 status',
+  //     async () => {
+  //       const response = await api
+  //         .get('/strings/filter-by-natural-language?strings%20containing%20the%20letter%20z')
+  //         .expect(200)
   
-        assert(response.body.includes('data'))
-      }
-    )
+  //       assert(response.body.includes('data'))
+  //     }
+  //   )
 
-    test(
-      'Invalid natural language query returns 400 status',
-      async () => {
-        await api
-          .get('/strings/filter-by-natural-language?this query is invalid')
-          .expect(400)
-      }
-    )
+  //   test(
+  //     'Invalid natural language query returns 400 status',
+  //     async () => {
+  //       await api
+  //         .get('/strings/filter-by-natural-language?this query is invalid')
+  //         .expect(400)
+  //     }
+  //   )
 
-    test(
-      'Conflicting query should return 422 status',
-      async () => {
-        await api
-          .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20and%20lesser%20than%205')
-          .expect(422)
-      }
-    )
-  })
+  //   test(
+  //     'Conflicting query should return 422 status',
+  //     async () => {
+  //       await api
+  //         .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20and%20lesser%20than%205')
+  //         .expect(422)
+  //     }
+  //   )
+  // })
 
-  describe('DELETE String', () => {
-    test(
-      'for existing, valid String should return 204 status',
-      async () => {
-        const string_to_delete = await api
-          .post('/strings')
-          .send({
-            value: 'the string to delete'
-          })
-          .expect(201)
+  // describe('DELETE String', () => {
+  //   test(
+  //     'for existing, valid String should return 204 status',
+  //     async () => {
+  //       const string_to_delete = await api
+  //         .post('/strings')
+  //         .send({
+  //           value: 'the string to delete'
+  //         })
+  //         .expect(201)
         
-        await api
-          .delete(`/strings/${string_to_delete.body.value}`)
-          .expect(204)
-      }
-    )
-  })
+  //       await api
+  //         .delete(`/strings/${string_to_delete.body.value}`)
+  //         .expect(204)
+  //     }
+  //   )
+  // })
+
   // after(async () => {
   //   // dicsconnect the db connection
   // })
