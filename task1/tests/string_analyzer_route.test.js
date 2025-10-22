@@ -112,7 +112,7 @@ describe('string analyzer', () => {
     )
   })
 
-  describe('GET request', () => {
+  describe('GET a string request', () => {
     test(
       'of an existing string should be successful',
       async () => {
@@ -166,92 +166,111 @@ describe('string analyzer', () => {
     )
   })
 
-  // describe('Natural Language Filtering, such as', () => {
-  //   // beforeEach(async () => {
-  //   //   // delete all existing records
-  //   //   // post two or more records
-  //   // })
+  describe('Natural Language Filtering, such as', () => {
+    beforeEach(() => {
+      const deleteStmts = [
+        `DELETE FROM string_analyzer`,
+        `DELETE FROM string_analyzer_property`
+      ]
 
-  //   test(
-  //     '"all single word palindromic strings" returns 200 status',
-  //     async () => {
-  //       const response = await api
-  //         .get('/strings/filter-by-natural-language?query=all%20single%20word%20palindromic%20strings')
-  //         .expect(200)
+      for (const stmt of deleteStmts) {
+        db.exec(stmt)
+      }
+    })
 
-  //       assert(response.body.includes('data'))
-  //     }
-  //   )
+    test(
+      '"all single word palindromic strings" returns 200 status',
+      async () => {
+        await api.post('/string').send({"value": "Level"})
 
-  //   test(
-  //     '"strings longer than 10 characters" return 200 status',
-  //     async () => {
-  //       const response = await api
-  //         .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20characters')
-  //         .expect(200)
+        const response = await api
+          .get('/strings/filter-by-natural-language?query=all%20single%20word%20palindromic%20strings')
+          .expect(200)
 
-  //       assert(response.body.includes('data'))
-  //     }
-  //   )
+        // assert.strictEqual(response.body.length, 1)
+      }
+    )
 
-  //   test(
-  //     '"palindromic strings that contain the first vowel" returns 200 status',
-  //     async () => {
-  //       const response = await api
-  //         .get('/strings/filter-by-natural-language?palindromic%20strings%20that%20contain%20the%20the%20first%20vowel')
-  //         .expect(200)
+    test(
+      '"strings longer than 10 characters" return 200 status',
+      async () => {
+        await api.post('/strings').send({
+          "value": "The characters here are longer than ten"
+        })
 
-  //       assert(response.body.includes('data'))
-  //     }
-  //   )
+        const response = await api
+          .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20characters')
+          .expect(200)
 
-  //   test(
-  //     '"strings containing the letter z" returns 200 status',
-  //     async () => {
-  //       const response = await api
-  //         .get('/strings/filter-by-natural-language?strings%20containing%20the%20letter%20z')
-  //         .expect(200)
+        assert.strictEqual(response.body.length, 1)
+      }
+    )
+
+    test(
+      '"palindromic strings that contain the first vowel" returns 200 status',
+      async () => {
+        await api.post('/strings').send({
+          "value": "A man, a plan, a canal, Panama!"
+        })
+
+        const response = await api
+          .get('/strings/filter-by-natural-language?palindromic%20strings%20that%20contain%20the%20first%20vowel')
+          .expect(200)
+
+        assert.strictEqual(response.body.length, 1)
+      }
+    )
+
+    test(
+      '"strings containing the letter z" returns 200 status',
+      async () => {
+        await api.post('/strings').send({
+          "value": "Azeeza"
+        })
+        const response = await api
+          .get('/strings/filter-by-natural-language?strings%20containing%20the%20letter%20z')
+          .expect(200)
   
-  //       assert(response.body.includes('data'))
-  //     }
-  //   )
+        assert.strictEqual(response.body.length, 1)
+      }
+    )
 
-  //   test(
-  //     'Invalid natural language query returns 400 status',
-  //     async () => {
-  //       await api
-  //         .get('/strings/filter-by-natural-language?this query is invalid')
-  //         .expect(400)
-  //     }
-  //   )
+    test(
+      'Invalid natural language query returns 400 status',
+      async () => {
+        await api
+          .get('/strings/filter-by-natural-language?this query is invalid')
+          .expect(400)
+      }
+    )
 
-  //   test(
-  //     'Conflicting query should return 422 status',
-  //     async () => {
-  //       await api
-  //         .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20and%20lesser%20than%205')
-  //         .expect(422)
-  //     }
-  //   )
-  // })
+    test(
+      'Conflicting query should return 422 status',
+      async () => {
+        await api
+          .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20and%20lesser%20than%205')
+          .expect(422)
+      }
+    )
+  })
 
-  // describe('DELETE String', () => {
-  //   test(
-  //     'for existing, valid String should return 204 status',
-  //     async () => {
-  //       const string_to_delete = await api
-  //         .post('/strings')
-  //         .send({
-  //           value: 'the string to delete'
-  //         })
-  //         .expect(201)
+  describe('DELETE String', () => {
+    test(
+      'for existing, valid String should return 204 status',
+      async () => {
+        const string_to_delete = await api
+          .post('/strings')
+          .send({
+            value: 'the string to delete'
+          })
+          .expect(201)
         
-  //       await api
-  //         .delete(`/strings/${string_to_delete.body.value}`)
-  //         .expect(204)
-  //     }
-  //   )
-  // })
+        await api
+          .delete(`/strings/${string_to_delete.body.value}`)
+          .expect(204)
+      }
+    )
+  })
 
   after(async () => {
     // dicsconnect the db connection

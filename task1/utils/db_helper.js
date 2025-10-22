@@ -15,6 +15,29 @@ const findString = (stringHash) => {
   return stmt.get(stringHash)
 }
 
+const deleteString = (stringHash, properties) => {
+  try {
+    const deleteSaRec = db.prepare(
+      `
+      DELETE FROM string_analyzer
+      WHERE id = ?
+      `
+    )
+    stmt.get(stringHash)
+
+    const deleteSapRec = db.prepare(
+      `
+      DELETE FROM string_analyzer_property
+      WHERE id = ?
+      `
+    )
+    stmt.get(properties)
+  } catch (error) {
+    return -1
+  }
+  
+}
+
 const insertString = (stringObj) => {
   const insert = db.prepare(
     `
@@ -78,9 +101,93 @@ const findQueryBasedStrings = (queryObj) => {
   }
 }
 
+const findNaturalLangQueryBasedStrings = (queryObj) => {
+  try {
+    let stmt = null
+    
+    if (
+      queryObj.word_count && queryObj.is_palindrome &&
+      !queryObj.min_length && !queryObj.contains_character
+    ) {
+      stmt = db.prepare(
+        `
+        SELECT sa.id, sa.value, sa.created_at, sap.length,
+        sap.is_palindrome, sap.unique_characters, sap.word_count,
+        sap.sha256_hash, sap.character_frequency_map
+        FROM string_analyzer sa
+        JOIN string_analyzer_property sap ON sa.properties = sap.id
+        WHERE sap.is_palindrome = ? AND sap.word_count = ?
+        `
+      )
+      return stmt.all(
+        queryObj.is_palindrome,
+        queryObj.word_count,
+      )
+    } else if (
+      !queryObj.word_count && !queryObj.is_palindrome &&
+      queryObj.min_length && !queryObj.contains_character
+    ) {
+      stmt = db.prepare(
+        `
+        SELECT sa.id, sa.value, sa.created_at, sap.length,
+        sap.is_palindrome, sap.unique_characters, sap.word_count,
+        sap.sha256_hash, sap.character_frequency_map
+        FROM string_analyzer sa
+        JOIN string_analyzer_property sap ON sa.properties = sap.id
+        WHERE sap.length >= ?
+        `
+      )
+      return stmt.all(
+        queryObj.min_length,
+      )
+    } else if (
+      !queryObj.word_count && queryObj.is_palindrome &&
+      !queryObj.min_length && queryObj.contains_character
+    ) {
+      stmt = db.prepare(
+        `
+        SELECT sa.id, sa.value, sa.created_at, sap.length,
+        sap.is_palindrome, sap.unique_characters, sap.word_count,
+        sap.sha256_hash, sap.character_frequency_map
+        FROM string_analyzer sa
+        JOIN string_analyzer_property sap ON sa.properties = sap.id
+        WHERE sap.is_palindrome = ?
+          AND sap.character_frequency_map LIKE ?
+        `
+      )
+      return stmt.all(
+        queryObj.is_palindrome,
+        `%"${queryObj.contains_character}":%`
+      )
+    }  else if (
+      !queryObj.word_count && !queryObj.is_palindrome &&
+      !queryObj.min_length && queryObj.contains_character
+    ) {
+      stmt = db.prepare(
+        `
+        SELECT sa.id, sa.value, sa.created_at, sap.length,
+        sap.is_palindrome, sap.unique_characters, sap.word_count,
+        sap.sha256_hash, sap.character_frequency_map
+        FROM string_analyzer sa
+        JOIN string_analyzer_property sap ON sa.properties = sap.id
+        WHERE sap.character_frequency_map LIKE ?
+        `
+      )
+      return stmt.all(
+        `%"${queryObj.contains_character}":%`
+      )
+    }
+
+  } catch (error) {
+    return -1
+  }
+}
+
 module.exports = {
   findString,
+  deleteString,
   insertString,
   insertStringProperties,
-  findQueryBasedStrings
+  findQueryBasedStrings,
+  findNaturalLangQueryBasedStrings
 }

@@ -9,9 +9,10 @@ const {
   insertString,
   insertStringProperties,
   findString,
-  findQueryBasedStrings
+  findQueryBasedStrings,
+  findNaturalLangQueryBasedStrings,
+  deleteString
 } = require('../utils/db_helper')
-// console.log('loading stringAnalyzerRoutes module');
 
 stringAnalyzerRoutes
   .post('', async (req, res) => {
@@ -71,14 +72,17 @@ stringAnalyzerRoutes
   })
 
 stringAnalyzerRoutes
-  .get('/:stringId', async (req, res) => {
+  .get('/:stringId', async (req, res, next) => {
+    if (req.params.stringId === 'filter-by-natural-language')
+      return next()
+
     const stringId = req.params.stringId
 
     if (!stringExist(stringId)) {
       return res
         .status(404)
         .send({
-          error: 'String does not exist in the system'
+          'error': 'String does not exist in the system'
         })
     }
 
@@ -128,7 +132,13 @@ stringAnalyzerRoutes
 
     const foundStrings = findQueryBasedStrings(queryObj)
 
-    let formattedFoundStrings = null
+    if (foundStrings === -1) {
+      return res.status(400).send({
+        error: 'Invalid query parameter values or types'
+      })
+    }
+
+    let formattedFoundStrings = []
 
     if (foundStrings.length > 0) {
       formattedFoundStrings = foundStrings
@@ -137,6 +147,133 @@ stringAnalyzerRoutes
 
     res.status(200).json(formattedFoundStrings)
 
+  })
+
+stringAnalyzerRoutes
+  .get('/filter-by-natural-language', async (req, res) => {
+    const queryStr = req.query.query
+    // console.log('queryStr:', queryStr)  // queryStr: all single word palindromic strings
+    
+
+    if (queryStr.length = 0) {
+      return res.status(400).send({
+        error: 'Unable to parse natural language query'
+      })   
+    }
+    const supportedQueries = [
+      "single word palindromic strings",
+      "strings longer than",
+      "palindromic strings that contain",
+      "strings containing the letter"
+    ]
+
+    if (
+      !queryStr.includes(supportedQueries[0]) &&
+      !queryStr.includes(supportedQueries[1]) &&
+      !queryStr.includes(supportedQueries[2]) &&
+      !queryStr.includes(supportedQueries[3])
+    ) {
+      return res.status(422).send({
+        error: 'Query parsed but resulted in conflicting filters'
+      })
+    }
+
+    const filteringObject = {}
+
+    const formattedQueryStr = queryStr.replace(/%20/g, ' ')
+    
+    if (formattedQueryStr.includes(supportedQueries[0])) {
+      filteringObject['word_count'] = 1
+      filteringObject['is_palindrome'] = 1
+    }
+    
+    if (
+      formattedQueryStr.includes(supportedQueries[1]) &&
+      formattedQueryStr.includes('character')
+    ) {
+      const numberValue = formattedQueryStr.match(/\d+/)[0]
+      filteringObject['min_length'] = numberValue
+    }
+
+    if (
+      formattedQueryStr
+        .includes(supportedQueries[2])
+    ) {
+      filteringObject['is_palindrome'] = 1
+    }
+
+    if (formattedQueryStr.includes('first vowel')) {
+      filteringObject['contains_character'] = 'a'
+    } else if (formattedQueryStr.includes('second vowel')) {
+      filteringObject['contains_character'] = 'e'
+    } else if (formattedQueryStr.includes('third vowel')) {
+      filteringObject['contains_character'] = 'i'
+    } else if (formattedQueryStr.includes('fourth vowel')) {
+      filteringObject['contains_character'] = 'o'
+    } else if (
+      formattedQueryStr.includes('last vowel') ||
+      formattedQueryStr.includes('fifth vowel')
+    ) {
+      filteringObject['contains_character'] = 'u'
+    }
+
+    if (
+      formattedQueryStr.includes(supportedQueries[3])
+    ) {
+      const letterValue = formattedQueryStr.match(/\w$/)[0]
+      filteringObject['contains_character'] = letterValue
+    }
+
+    // console.log('filteringObject:', filteringObject);
+    
+    const foundStrings =
+      findNaturalLangQueryBasedStrings(filteringObject)
+    
+    if (foundStrings === -1) {
+      return res.status(422).send({
+        error: 'Query parsed but resulted in conflicting filters'
+      })
+    }
+
+    let formattedFoundStrings = []
+
+    // console.log('foundStrings:', foundStrings);
+    
+
+    if (foundStrings.length > 0) {
+      formattedFoundStrings = foundStrings
+        .map(foundString => formatString(foundString))
+    }
+
+    res.status(200).json(formattedFoundStrings)
+  })
+
+stringAnalyzerRoutes
+  .delete('/:stringId', async (req, res, next) => {
+    // if (req.params.stringId === 'filter-by-natural-language')
+    //   return next()
+
+    const stringId = req.params.stringId
+
+    if (!stringExist(stringId)) {
+      return res
+        .status(404)
+        .send({
+          'error': 'String does not exist in the system'
+        })
+    }
+
+    const foundString = findString(stringId)
+
+    const result = deleteString(stringId, foundString.properties)
+
+    if (result === -1) {
+      return res.status(400).send({
+        error: "Delete operation failed"
+      })
+    }
+
+    res.status(204).end()
   })
 
 module.exports = {

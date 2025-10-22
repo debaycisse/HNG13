@@ -11,10 +11,12 @@ const reverse = (string) => {
 }
 
 const is_palindrome = (stringValue) => {
-  const reversedString = reverse(stringValue)
+  let formattedString = stringValue.toLowerCase()
+  formattedString = formattedString.replace(/[\W]/g, '')
+  const reversedString = reverse(formattedString)
 
-  for (let i = 0; i <= stringValue.length - 1; i++) {
-    if (reversedString[i] !== stringValue[i]) {
+  for (let i = 0; i <= reversedString.length - 1; i++) {
+    if (reversedString[i] !== formattedString[i]) {
       return false
     }
   }

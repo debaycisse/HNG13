@@ -1,1 +1,4 @@
 GET http://localhost:3002/strings?is_palindrome=false&min_length=5&max_length=20&word_count=4&contains_character=e
+
+###
+GET http://localhost:3002/strings/filter-by-natural-language?query=all%20single%20word%20palindromic%20strings
