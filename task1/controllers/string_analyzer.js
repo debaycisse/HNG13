@@ -268,8 +268,8 @@ stringAnalyzerRoutes
     const result = deleteString(stringId, foundString.properties)
 
     if (result === -1) {
-      return res.status(400).send({
-        error: "Delete operation failed"
+      return res.status(404).send({
+        error: "String does not exist in the system"
       })
     }
 
