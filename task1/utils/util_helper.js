@@ -1,7 +1,6 @@
 const crypto = require('crypto')
 
 const { findString } = require('./db_helper')
-// console.log('util helper after db_helper import');
 
 const reverse = (string) => {
   let reversedString = ''

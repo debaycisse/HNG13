@@ -6,7 +6,6 @@ const dbName = process.env.NODE_ENV === 'test' ?
 const db = new Database(dbName)
 const port = process.env.PORT
 
-// createTables()
 const createStringAnalyzer = `
   CREATE TABLE IF NOT EXISTS string_analyzer (
     id TEXT PRIMARY KEY,

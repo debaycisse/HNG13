@@ -1,7 +1,7 @@
 const { describe, beforeEach, after, test } = require('node:test')
 const assert = require('node:assert')
 const supertest = require('supertest')  // TODO: install
-const app = require('../app') // TODO: create the app.js file as the root
+const { app } = require('../app') // TODO: create the app.js file as the root
 const { db } = require('../utils/config')
 const api = supertest(app)
 
@@ -9,15 +9,13 @@ describe('string analyzer', () => {
   describe('POST request', () => {
     beforeEach(() => {
       const stmts = [
-        `DELETE * FROM string_analyzer`,
-        `DELETE * FROM string_analyzer_property`
+        `DELETE FROM string_analyzer`,
+        `DELETE FROM string_analyzer_property`
       ]
 
       for (const stmt of stmts) {
         db.exec(stmt)
       }
-
-      db.close()
     })
 
     test(
@@ -27,21 +25,42 @@ describe('string analyzer', () => {
         const response = await api
           .post('/strings')
           .send({
-            value: "The brown fox jumps over the lazy dog"
+            "value": "The brown fox jumps over the lazy dog"
           })
           .expect(201)
         assert(
           response.body !== null
+        )        
+        assert(
+          Object.keys(response.body).includes('id')
         )
-        assert(response.body.includes('id'))
-        assert(response.body.includes('value'))
-        assert(response.body.includes('properties'))
-        assert(response.body.properties.includes('is_palindrome'))
-        assert(response.body.properties.includes('unique_characters'))
-        assert(response.body.properties.includes('word_count'))
-        assert(response.body.properties.includes('sha256_hash'))
-        assert(response.body.properties.includes('character_frequency_map'))
-        assert(response.body.includes('created_at'))
+        assert(
+          Object.keys(response.body).includes('value')
+        )
+        assert(
+          Object.keys(response.body).includes('properties')
+        )
+        assert(
+          Object.keys(response.body.properties)
+            .includes('is_palindrome')
+        )
+        assert(
+          Object.keys(response.body.properties)
+            .includes('unique_characters')
+        )
+        assert(
+          Object.keys(response.body.properties)
+            .includes('word_count')
+        )
+        assert(
+          Object.keys(response.body.properties)
+            .includes('sha256_hash')
+        )
+        assert(
+          Object.keys(response.body.properties)
+            .includes('character_frequency_map')
+        )
+        assert(Object.keys(response.body).includes('created_at'))
       }
     )
 
@@ -77,7 +96,7 @@ describe('string analyzer', () => {
       async () => {
         await api
           .post('/strings')
-          .send()
+          .send({})
           .expect(400)
       }
     )
@@ -87,64 +106,65 @@ describe('string analyzer', () => {
       async () => {
         await api
           .post('/strings')
-          .send()
+          .send({"value": ["string 1", "string 1"]})
           .expect(422)
       }
     )
   })
 
-  // describe('GET request', () => {
-  //   test(
-  //     'of an existing string should be successful',
-  //     async () => {
-  //       const string_value = await api
-  //         .post('/strings')
-  //         .send({
-  //           value: "string to get"
-  //         })
-  //         .expect(201)
-  //         .expect('Content-Type', /application\/json/)
+  describe('GET request', () => {
+    test(
+      'of an existing string should be successful',
+      async () => {
+        const string_value = await api
+          .post('/strings')
+          .send({
+            value: "string to get"
+          })
+          .expect(201)
+          .expect('Content-Type', /application\/json/)
 
-  //       await api
-  //         .get(`/strings/${string_value.body.value}`)
-  //         .expect(200)
-  //     }
-  //   )
+        await api
+          .get(`/strings/${string_value.body.id}`)
+          .expect(200)
+      }
+    )
 
-  //   test(
-  //     'of a non-exisitng string returns 404 status code',
-  //     async () => {
-  //       const non_existing_string = 'non-existing'
+    test(
+      'of a non-exisitng string returns 404 status code',
+      async () => {
+        const non_existing_string = 'non-existing'
 
-  //       await api
-  //         .get(`/strings/${non_existing_string}`)
-  //         .expect(404)
-  //     }
-  //   )
-  // })
+        await api
+          .get(`/strings/${non_existing_string}`)
+          .expect(404)
+      }
+    )
+  })
 
-  // describe('GET all Strings with Filtering', () => {
-  //   test(
-  //     'returns 200 status for valid query parameters',
-  //     async () => {
-  //       await api
-  //         .get('/strings?is_palindrome=true&min_length=5\
-  //           &max_length=20&word_count=2&contains_character=a'
-  //         )
-  //         .expect(200)
-  //     }
-  //   )
+  describe('GET all Strings with Filtering', () => {
+    test(
+      'returns 200 status for valid query parameters',
+      async () => {
+        await api
+          .get('/strings?is_palindrome=true&min_length=5\
+            &max_length=20&word_count=2&contains_character=a'
+          )
+          .expect(200)
+      }
+    )
 
-  //   test(
-  //     'returns 400 status for invalid query parameters values or types',
-  //     async () => {
-  //       await api
-  //         .get('/strings?is_palindromest=true&min_length=5&max_length=20&word_count=2&contains_character=a'
-  //         )
-  //         .expect(400)
-  //     }
-  //   )
-  // })
+    test(
+      'returns 400 status for invalid query parameters values or types',
+      async () => {
+        await api
+          .get('/strings?is_palindromest=true&min_length=5\
+            &max_length=20&word_count=2&contains_character=a'
+          )
+          .expect(400)
+      }
+    )
+  })
 
   // describe('Natural Language Filtering, such as', () => {
   //   // beforeEach(async () => {
@@ -233,7 +253,8 @@ describe('string analyzer', () => {
   //   )
   // })
 
-  // after(async () => {
-  //   // dicsconnect the db connection
-  // })
+  after(async () => {
+    // dicsconnect the db connection
+    db.close()
+  })
 })

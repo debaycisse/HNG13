@@ -1,3 +1,6 @@
 POST http://localhost:3002/strings
 Content-Type: application/json
 
+{
+    "value": "Here is the string"
+}

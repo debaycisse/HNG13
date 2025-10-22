@@ -1,7 +1,5 @@
 const { db } = require('./config')
 
-
-
 const findString = (stringHash) => {
   const stmt = db.prepare(
     `
@@ -13,7 +11,7 @@ const findString = (stringHash) => {
     WHERE sa.id = ?
     `
   )
-  
+
   return stmt.get(stringHash)
 }
 
@@ -53,8 +51,36 @@ const insertStringProperties = (propertyObj) => {
   return result.lastInsertRowid
 }
 
+const findQueryBasedStrings = (queryObj) => {
+  try {
+    const stmt = db.prepare(
+      `
+      SELECT sa.id, sa.value, sa.created_at, sap.length,
+      sap.is_palindrome, sap.unique_characters, sap.word_count,
+      sap.sha256_hash, sap.character_frequency_map
+      FROM string_analyzer sa
+      JOIN string_analyzer_property sap ON sa.properties = sap.id
+      WHERE sap.is_palindrome = ? AND sap.length >= ?
+        AND sap.length <= ? AND sap.word_count = ?
+        AND sap.character_frequency_map LIKE ?
+      `
+    )
+
+    return stmt.all(
+      queryObj.is_palindrome === true ? 1 : 0,
+      queryObj.min_length,
+      queryObj.max_length,
+      queryObj.word_count,
+      `%"${queryObj.contains_character}":%`
+    )
+  } catch (error) {
+    return -1
+  }
+}
+
 module.exports = {
   findString,
   insertString,
-  insertStringProperties
+  insertStringProperties,
+  findQueryBasedStrings
 }

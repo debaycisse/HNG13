@@ -4,12 +4,12 @@ const {
   createHash, stringExist, is_palindrome, wordCount,
   countUniqueCharacter, createCharFreqMap, formatString
 } = require('../utils/util_helper')
-// console.log('router module loading after util helper...');
 
 const {
   insertString,
   insertStringProperties,
-  findString
+  findString,
+  findQueryBasedStrings
 } = require('../utils/db_helper')
 // console.log('loading stringAnalyzerRoutes module');
 
@@ -29,7 +29,7 @@ stringAnalyzerRoutes
       return res
         .status(422)
         .send({
-          error: 'Invalid data type for "value" (must be string)'
+          error: 'Invalid data type for value (must be string)'
         })
     }
 
@@ -68,6 +68,75 @@ stringAnalyzerRoutes
     res
       .status(201)
       .json(formatString(createdSaObj))
+  })
+
+stringAnalyzerRoutes
+  .get('/:stringId', async (req, res) => {
+    const stringId = req.params.stringId
+
+    if (!stringExist(stringId)) {
+      return res
+        .status(404)
+        .send({
+          error: 'String does not exist in the system'
+        })
+    }
+
+    const foundString = findString(stringId)
+    res.status(200).json(formatString(foundString))
+  })
+
+stringAnalyzerRoutes
+  .get('', async (req, res) => {
+    const {
+      is_palindrome,
+      min_length,
+      max_length,
+      word_count,
+      contains_character
+    } = req.query
+
+    const is_palindrome_invalid =
+      typeof Boolean(is_palindrome) !== 'boolean'
+    const min_length_invalid =
+      typeof Number(min_length) !== 'number'
+    const max_length_invalid =
+      typeof Number(max_length) !== 'number'
+    const word_count_invalid =
+      typeof Number(word_count) !== 'number'
+    const contains_character_invalid =
+      typeof contains_character !== 'string'
+    
+    if (
+      !is_palindrome || !min_length || !max_length ||
+      !word_count || !contains_character || is_palindrome_invalid ||
+      min_length_invalid || max_length_invalid ||
+      word_count_invalid || contains_character_invalid
+    ) {
+      return res.status(400).send({
+        error: 'Invalid query parameter values or types'
+      })
+    }
+
+    const queryObj = {
+      is_palindrome,
+      min_length,
+      max_length,
+      word_count,
+      contains_character
+    }
+
+    const foundStrings = findQueryBasedStrings(queryObj)
+
+    let formattedFoundStrings = null
+
+    if (foundStrings.length > 0) {
+      formattedFoundStrings = foundStrings
+        .map(foundString => formatString(foundString))
+    }
+
+    res.status(200).json(formattedFoundStrings)
+
   })
 
 module.exports = {
