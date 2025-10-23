@@ -191,7 +191,6 @@ stringAnalyzerRoutes
 
     
     const result = deleteString(stringId, foundString.properties)
-    console.log('result:', result);
 
     if (result === -1) {
       return res.status(500).send({
