@@ -194,10 +194,10 @@ describe('string analyzer', () => {
         await api.post('/strings').send({"value": "Level"}).expect(201)
 
         const response = await api
-          .get('/strings/filter-by-natural-language?query%20all%20single%20word%20palindromic%20strings')
+          .get('/strings/filter-by-natural-language?query=all%20single%20word%20palindromic%20strings')
           .expect(200)
 
-        assert.strictEqual(response.body.length, 1)
+        assert.strictEqual(response.body.data.length, 1)
       }
     )
 
@@ -209,10 +209,10 @@ describe('string analyzer', () => {
         }).expect(201)
 
         const response = await api
-          .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20characters')
+          .get('/strings/filter-by-natural-language?query=strings%20longer%20than%2010%20characters')
           .expect(200)
 
-        assert.strictEqual(response.body.length, 1)
+        assert.strictEqual(response.body.data.length, 1)
       }
     )
 
@@ -224,10 +224,10 @@ describe('string analyzer', () => {
         }).expect(201)
 
         const response = await api
-          .get('/strings/filter-by-natural-language?palindromic%20strings%20that%20contain%20the%20first%20vowel')
+          .get('/strings/filter-by-natural-language?query=palindromic%20strings%20that%20contain%20the%20first%20vowel')
           .expect(200)
 
-        assert.strictEqual(response.body.length, 1)
+        assert.strictEqual(response.body.data.length, 1)
       }
     )
 
@@ -238,28 +238,28 @@ describe('string analyzer', () => {
           "value": "Azeeza"
         })
         const response = await api
-          .get('/strings/filter-by-natural-language?strings%20containing%20the%20letter%20z')
+          .get('/strings/filter-by-natural-language?query=strings%20containing%20the%20letter%20z')
           .expect(200)
   
-        assert.strictEqual(response.body.length, 1)
+        assert.strictEqual(response.body.data.length, 1)
       }
     )
 
     test(
-      'Invalid natural language query returns 400 status',
+      'Invalid natural language query returns 422 status',
       async () => {
         await api
           .get('/strings/filter-by-natural-language?this query is invalid')
-          .expect(400)
+          .expect(422)
       }
     )
 
     test(
-      'Conflicting query should return 422 status',
+      'Conflicting query should return 400 status',
       async () => {
         await api
-          .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20and%20lesser%20than%205')
-          .expect(422)
+          .get('/strings/filter-by-natural-language?query=strings%20bigger%20and%20than%2010%20and%20lesser%20than%205')
+          .expect(400)
       }
     )
   })

@@ -140,7 +140,14 @@ stringAnalyzerRoutes
 
 stringAnalyzerRoutes
   .get('/filter-by-natural-language', async (req, res) => {
-    const queryStr = (Object.keys(req.query))[0]
+    const queryStr = req.query.query
+    console.log("queryStr - ", queryStr);
+    
+
+    if (!queryStr)
+      return res.status(422).send({
+        error: 'Query parsed but resulted in conflicting filters'
+      })
 
     const filteringObj = obtainFilter(queryStr)
     
@@ -152,16 +159,10 @@ stringAnalyzerRoutes
 
     const foundStrings =
       findNaturalLangQueryBasedStrings(filteringObj)
-    
-    if (foundStrings === -1) {
-      return res.status(422).send({
-        error: 'Query parsed but resulted in conflicting filters'
-      })
-    }
 
     let formattedFoundStrings = []
 
-    if (foundStrings.length > 0) {
+    if (foundStrings !== -1 && foundStrings.length > 0) {
       formattedFoundStrings = foundStrings
         .map(foundString => formatString(foundString))
     }
