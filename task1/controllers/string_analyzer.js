@@ -2,7 +2,8 @@ const stringAnalyzerRoutes = require('express').Router()
 
 const {
   createHash, stringExist, is_palindrome, wordCount,
-  countUniqueCharacter, createCharFreqMap, formatString
+  countUniqueCharacter, createCharFreqMap, formatString,
+  obtainFilter
 } = require('../utils/util_helper')
 
 const {
@@ -78,59 +79,53 @@ stringAnalyzerRoutes
 
     const stringId = req.params.stringId
 
-    if (!stringExist(stringId)) {
+    const foundString = findString(stringId)
+    if (!foundString) {      
       return res
         .status(404)
         .send({
           'error': 'String does not exist in the system'
         })
     }
-
-    const foundString = findString(stringId)
     res.status(200).json(formatString(foundString))
   })
 
 stringAnalyzerRoutes
   .get('', async (req, res) => {
-    const {
-      is_palindrome,
-      min_length,
-      max_length,
-      word_count,
-      contains_character
-    } = req.query
+    const queryString = {...req.query}
 
-    const is_palindrome_invalid =
-      typeof Boolean(is_palindrome) !== 'boolean'
-    const min_length_invalid =
-      typeof Number(min_length) !== 'number'
-    const max_length_invalid =
-      typeof Number(max_length) !== 'number'
-    const word_count_invalid =
-      typeof Number(word_count) !== 'number'
-    const contains_character_invalid =
-      typeof contains_character !== 'string'
+    const palindromeType =
+      typeof Boolean(queryString.is_palindrome) === 'boolean'
+    const minLengthType =
+      typeof Number(queryString.min_length) === 'number'
+    const maxLengthType =
+      typeof Number(queryString.max_length) === 'number'
+    const wordCountType =
+      typeof Number(queryString.word_count) === 'number'
+    const containsCountType =
+      typeof String(queryString.contains_character) === 'string'
     
+    const notSupported = 
+      !Object.keys(queryString).includes('is_palindrome') &&
+      !Object.keys(queryString).includes('min_length') &&
+      !Object.keys(queryString).includes('max_length') &&
+      !Object.keys(queryString).includes('word_count') &&
+      !Object.keys(queryString).includes('contains_character')
+
     if (
-      !is_palindrome || !min_length || !max_length ||
-      !word_count || !contains_character || is_palindrome_invalid ||
-      min_length_invalid || max_length_invalid ||
-      word_count_invalid || contains_character_invalid
+      (queryString.is_palindrome && !palindromeType) ||
+      (queryString.min_length && !minLengthType) ||
+      (queryString.max_length && !maxLengthType) ||
+      (queryString.word_count && !wordCountType) ||
+      (queryString.contains_character && !containsCountType) ||
+      notSupported
     ) {
       return res.status(400).send({
         error: 'Invalid query parameter values or types'
       })
     }
 
-    const queryObj = {
-      is_palindrome,
-      min_length,
-      max_length,
-      word_count,
-      contains_character
-    }
-
-    const foundStrings = findQueryBasedStrings(queryObj)
+    const foundStrings = findQueryBasedStrings(queryString)
 
     if (foundStrings === -1) {
       return res.status(400).send({
@@ -151,83 +146,18 @@ stringAnalyzerRoutes
 
 stringAnalyzerRoutes
   .get('/filter-by-natural-language', async (req, res) => {
-    const queryStr = req.query.query
-    // console.log('queryStr:', queryStr)  // queryStr: all single word palindromic strings
-    
+    const queryStr = (Object.keys(req.query))[0]
 
-    if (queryStr.length = 0) {
+    const filteringObj = obtainFilter(queryStr)
+    
+    if (filteringObj === -1) {
       return res.status(400).send({
         error: 'Unable to parse natural language query'
-      })   
-    }
-    const supportedQueries = [
-      "single word palindromic strings",
-      "strings longer than",
-      "palindromic strings that contain",
-      "strings containing the letter"
-    ]
-
-    if (
-      !queryStr.includes(supportedQueries[0]) &&
-      !queryStr.includes(supportedQueries[1]) &&
-      !queryStr.includes(supportedQueries[2]) &&
-      !queryStr.includes(supportedQueries[3])
-    ) {
-      return res.status(422).send({
-        error: 'Query parsed but resulted in conflicting filters'
       })
     }
 
-    const filteringObject = {}
-
-    const formattedQueryStr = queryStr.replace(/%20/g, ' ')
-    
-    if (formattedQueryStr.includes(supportedQueries[0])) {
-      filteringObject['word_count'] = 1
-      filteringObject['is_palindrome'] = 1
-    }
-    
-    if (
-      formattedQueryStr.includes(supportedQueries[1]) &&
-      formattedQueryStr.includes('character')
-    ) {
-      const numberValue = formattedQueryStr.match(/\d+/)[0]
-      filteringObject['min_length'] = numberValue
-    }
-
-    if (
-      formattedQueryStr
-        .includes(supportedQueries[2])
-    ) {
-      filteringObject['is_palindrome'] = 1
-    }
-
-    if (formattedQueryStr.includes('first vowel')) {
-      filteringObject['contains_character'] = 'a'
-    } else if (formattedQueryStr.includes('second vowel')) {
-      filteringObject['contains_character'] = 'e'
-    } else if (formattedQueryStr.includes('third vowel')) {
-      filteringObject['contains_character'] = 'i'
-    } else if (formattedQueryStr.includes('fourth vowel')) {
-      filteringObject['contains_character'] = 'o'
-    } else if (
-      formattedQueryStr.includes('last vowel') ||
-      formattedQueryStr.includes('fifth vowel')
-    ) {
-      filteringObject['contains_character'] = 'u'
-    }
-
-    if (
-      formattedQueryStr.includes(supportedQueries[3])
-    ) {
-      const letterValue = formattedQueryStr.match(/\w$/)[0]
-      filteringObject['contains_character'] = letterValue
-    }
-
-    // console.log('filteringObject:', filteringObject);
-    
     const foundStrings =
-      findNaturalLangQueryBasedStrings(filteringObject)
+      findNaturalLangQueryBasedStrings(filteringObj)
     
     if (foundStrings === -1) {
       return res.status(422).send({
@@ -236,9 +166,6 @@ stringAnalyzerRoutes
     }
 
     let formattedFoundStrings = []
-
-    // console.log('foundStrings:', foundStrings);
-    
 
     if (foundStrings.length > 0) {
       formattedFoundStrings = foundStrings
@@ -250,12 +177,11 @@ stringAnalyzerRoutes
 
 stringAnalyzerRoutes
   .delete('/:stringId', async (req, res, next) => {
-    // if (req.params.stringId === 'filter-by-natural-language')
-    //   return next()
-
     const stringId = req.params.stringId
 
-    if (!stringExist(stringId)) {
+    const foundString = findString(stringId)
+
+    if (!foundString) {
       return res
         .status(404)
         .send({
@@ -263,16 +189,15 @@ stringAnalyzerRoutes
         })
     }
 
-    const foundString = findString(stringId)
-
+    
     const result = deleteString(stringId, foundString.properties)
+    console.log('result:', result);
 
     if (result === -1) {
-      return res.status(404).send({
-        error: "String does not exist in the system"
+      return res.status(500).send({
+        error: "Server error, couldn't delete string"
       })
     }
-
     res.status(204).end()
   })
 

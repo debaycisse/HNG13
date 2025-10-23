@@ -127,6 +127,7 @@ describe('string analyzer', () => {
         await api
           .get(`/strings/${string_value.body.id}`)
           .expect(200)
+          .expect('Content-Type', /application\/json/)
       }
     )
 
@@ -143,12 +144,22 @@ describe('string analyzer', () => {
   })
 
   describe('GET all Strings with Filtering', () => {
+    beforeEach(() => {
+      const deleteStmts = [
+        `DELETE FROM string_analyzer`,
+        `DELETE FROM string_analyzer_property`
+      ]
+
+      for (const stmt of deleteStmts) {
+        db.exec(stmt)
+      }
+    })
+
     test(
       'returns 200 status for valid query parameters',
       async () => {
         await api
-          .get('/strings?is_palindrome=true&min_length=5\
-            &max_length=20&word_count=2&contains_character=a'
+          .get(`/strings?is_palindrome=true&min_length=5&max_length=20&word_count=2&contains_character=a`
           )
           .expect(200)
       }
@@ -158,8 +169,7 @@ describe('string analyzer', () => {
       'returns 400 status for invalid query parameters values or types',
       async () => {
         await api
-          .get('/strings?is_palindromest=true&min_length=5\
-            &max_length=20&word_count=2&contains_character=a'
+          .get('/strings?is_palindromest=true'
           )
           .expect(400)
       }
@@ -181,13 +191,13 @@ describe('string analyzer', () => {
     test(
       '"all single word palindromic strings" returns 200 status',
       async () => {
-        await api.post('/string').send({"value": "Level"})
+        await api.post('/strings').send({"value": "Level"}).expect(201)
 
         const response = await api
-          .get('/strings/filter-by-natural-language?query=all%20single%20word%20palindromic%20strings')
+          .get('/strings/filter-by-natural-language?query%20all%20single%20word%20palindromic%20strings')
           .expect(200)
 
-        // assert.strictEqual(response.body.length, 1)
+        assert.strictEqual(response.body.length, 1)
       }
     )
 
@@ -196,7 +206,7 @@ describe('string analyzer', () => {
       async () => {
         await api.post('/strings').send({
           "value": "The characters here are longer than ten"
-        })
+        }).expect(201)
 
         const response = await api
           .get('/strings/filter-by-natural-language?strings%20longer%20than%2010%20characters')
@@ -211,7 +221,7 @@ describe('string analyzer', () => {
       async () => {
         await api.post('/strings').send({
           "value": "A man, a plan, a canal, Panama!"
-        })
+        }).expect(201)
 
         const response = await api
           .get('/strings/filter-by-natural-language?palindromic%20strings%20that%20contain%20the%20first%20vowel')
@@ -255,25 +265,35 @@ describe('string analyzer', () => {
   })
 
   describe('DELETE String', () => {
+    beforeEach(() => {
+      const deleteStmts = [
+        `DELETE FROM string_analyzer`,
+        `DELETE FROM string_analyzer_property`
+      ]
+
+      for (const stmt of deleteStmts) {
+        db.exec(stmt)
+      }
+    })
+
     test(
       'for existing, valid String should return 204 status',
       async () => {
-        const string_to_delete = await api
+        const stringToDelete = await api
           .post('/strings')
           .send({
-            value: 'the string to delete'
+            value: 'the string to be deleted'
           })
           .expect(201)
         
         await api
-          .delete(`/strings/${string_to_delete.body.value}`)
+          .delete(`/strings/${stringToDelete.body.id}`)
           .expect(204)
       }
     )
   })
 
   after(async () => {
-    // dicsconnect the db connection
     db.close()
   })
 })

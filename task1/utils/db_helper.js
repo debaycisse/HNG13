@@ -3,7 +3,7 @@ const { db } = require('./config')
 const findString = (stringHash) => {
   const stmt = db.prepare(
     `
-    SELECT sa.id, sa.value, sa.created_at, sap.length,
+    SELECT sa.id, sa.value, sa.created_at, sa.properties, sap.length,
     sap.is_palindrome, sap.unique_characters, sap.word_count,
     sap.sha256_hash, sap.character_frequency_map
     FROM string_analyzer sa
@@ -15,15 +15,15 @@ const findString = (stringHash) => {
   return stmt.get(stringHash)
 }
 
-const deleteString = (stringHash, properties) => {
-  try {
+const deleteString = (stringHash, propertiesId) => {
+  try {    
     const deleteSaRec = db.prepare(
       `
       DELETE FROM string_analyzer
       WHERE id = ?
       `
     )
-    stmt.get(stringHash)
+    deleteSaRec.run(stringHash)
 
     const deleteSapRec = db.prepare(
       `
@@ -31,11 +31,12 @@ const deleteString = (stringHash, properties) => {
       WHERE id = ?
       `
     )
-    stmt.get(properties)
+    deleteSapRec.run(propertiesId)
+
+    return 1
   } catch (error) {
     return -1
   }
-  
 }
 
 const insertString = (stringObj) => {
@@ -76,26 +77,48 @@ const insertStringProperties = (propertyObj) => {
 
 const findQueryBasedStrings = (queryObj) => {
   try {
-    const stmt = db.prepare(
-      `
+    let dbQuery = `
       SELECT sa.id, sa.value, sa.created_at, sap.length,
       sap.is_palindrome, sap.unique_characters, sap.word_count,
       sap.sha256_hash, sap.character_frequency_map
       FROM string_analyzer sa
       JOIN string_analyzer_property sap ON sa.properties = sap.id
-      WHERE sap.is_palindrome = ? AND sap.length >= ?
-        AND sap.length <= ? AND sap.word_count = ?
-        AND sap.character_frequency_map LIKE ?
       `
-    )
+    const availableColumns = {}
+    const filterings = []
 
-    return stmt.all(
-      queryObj.is_palindrome === true ? 1 : 0,
-      queryObj.min_length,
-      queryObj.max_length,
-      queryObj.word_count,
-      `%"${queryObj.contains_character}":%`
-    )
+    if (queryObj.is_palindrome) {
+      filterings.push('sap.is_palindrome = @is_palindrome')
+      availableColumns['is_palindrome'] = queryObj.is_palindrome ? 1 : 0
+    }
+
+    if (queryObj.min_length) {
+      filterings.push('sap.length >= @min_length')
+      availableColumns['min_length'] = queryObj.min_length
+    }
+
+    if (queryObj.max_length) {
+      filterings.push('sap.length <= @max_length')
+      availableColumns['max_length'] = queryObj.max_length
+    }
+
+    if (queryObj.word_count) {
+      filterings.push('sap.word_count = @word_count')
+      availableColumns['word_count'] = queryObj.word_count
+    }
+
+    if (queryObj.contains_character) {
+      filterings.push('sap.character_frequency_map LIKE @contains_character')
+      availableColumns['contains_character'] = queryObj.contains_character
+    }
+
+    if (filterings.length >= 1) {
+      dbQuery += 'WHERE ' + filterings.join(' AND ')
+    }
+
+    const stmt = db.prepare(dbQuery)
+
+    return stmt.all(availableColumns)
   } catch (error) {
     return -1
   }
@@ -103,80 +126,46 @@ const findQueryBasedStrings = (queryObj) => {
 
 const findNaturalLangQueryBasedStrings = (queryObj) => {
   try {
-    let stmt = null
-    
-    if (
-      queryObj.word_count && queryObj.is_palindrome &&
-      !queryObj.min_length && !queryObj.contains_character
-    ) {
-      stmt = db.prepare(
-        `
+    let dbQuery = `
         SELECT sa.id, sa.value, sa.created_at, sap.length,
         sap.is_palindrome, sap.unique_characters, sap.word_count,
         sap.sha256_hash, sap.character_frequency_map
         FROM string_analyzer sa
         JOIN string_analyzer_property sap ON sa.properties = sap.id
-        WHERE sap.is_palindrome = ? AND sap.word_count = ?
         `
-      )
-      return stmt.all(
-        queryObj.is_palindrome,
-        queryObj.word_count,
-      )
-    } else if (
-      !queryObj.word_count && !queryObj.is_palindrome &&
-      queryObj.min_length && !queryObj.contains_character
-    ) {
-      stmt = db.prepare(
-        `
-        SELECT sa.id, sa.value, sa.created_at, sap.length,
-        sap.is_palindrome, sap.unique_characters, sap.word_count,
-        sap.sha256_hash, sap.character_frequency_map
-        FROM string_analyzer sa
-        JOIN string_analyzer_property sap ON sa.properties = sap.id
-        WHERE sap.length >= ?
-        `
-      )
-      return stmt.all(
-        queryObj.min_length,
-      )
-    } else if (
-      !queryObj.word_count && queryObj.is_palindrome &&
-      !queryObj.min_length && queryObj.contains_character
-    ) {
-      stmt = db.prepare(
-        `
-        SELECT sa.id, sa.value, sa.created_at, sap.length,
-        sap.is_palindrome, sap.unique_characters, sap.word_count,
-        sap.sha256_hash, sap.character_frequency_map
-        FROM string_analyzer sa
-        JOIN string_analyzer_property sap ON sa.properties = sap.id
-        WHERE sap.is_palindrome = ?
-          AND sap.character_frequency_map LIKE ?
-        `
-      )
-      return stmt.all(
-        queryObj.is_palindrome,
-        `%"${queryObj.contains_character}":%`
-      )
-    }  else if (
-      !queryObj.word_count && !queryObj.is_palindrome &&
-      !queryObj.min_length && queryObj.contains_character
-    ) {
-      stmt = db.prepare(
-        `
-        SELECT sa.id, sa.value, sa.created_at, sap.length,
-        sap.is_palindrome, sap.unique_characters, sap.word_count,
-        sap.sha256_hash, sap.character_frequency_map
-        FROM string_analyzer sa
-        JOIN string_analyzer_property sap ON sa.properties = sap.id
-        WHERE sap.character_frequency_map LIKE ?
-        `
-      )
-      return stmt.all(
-        `%"${queryObj.contains_character}":%`
-      )
+    const availableColumns = {}
+    const filterings = []
+
+    if (queryObj.is_palindrome) {
+      filterings.push('sap.is_palindrome = @is_palindrome')
+      availableColumns['is_palindrome'] = queryObj.is_palindrome? 1 : 0
     }
+
+    if (queryObj.word_count) {
+      filterings.push('sap.word_count = @word_count')
+      availableColumns['word_count'] = queryObj.word_count
+    }
+
+    if (queryObj.min_length) {
+      filterings.push('sap.length >= @min_length')
+      availableColumns['min_length'] = queryObj.min_length
+    }
+
+    if (queryObj.contains_character) {
+      filterings
+        .push(
+          'sap.character_frequency_map LIKE @contains_character'
+        )
+      availableColumns['contains_character'] =
+        `%"${queryObj.contains_character}":%`
+    }
+
+    if (filterings.length >= 1)
+      dbQuery += 'WHERE ' + filterings.join(' AND ') + ';'
+
+    const stmt = db.prepare(dbQuery)
+
+    return stmt.all(availableColumns)
 
   } catch (error) {
     return -1

@@ -84,6 +84,62 @@ const formatString = (stringDataObj) => {
   }
 }
 
+const obtainFilter = (queryString) => {
+  const supportedQueries = [
+    "palindromic", "word", "words", "longer than",
+    "first vowel", "second vowel", "third vowel",
+    "fourth vowel", "fifth vowel", "last vowel",
+    "letter"
+  ]
+
+  let notFoundCount = 0
+  for (const sq of supportedQueries) {
+    if (!queryString.includes(sq)) {
+      notFoundCount += 1
+    }
+  }
+  if (notFoundCount === supportedQueries.length)
+    return -1
+
+  const filteringObj = {}
+
+  if (queryString.includes(supportedQueries[0]))
+    filteringObj['is_palindrome'] = true
+
+  if (queryString.includes(supportedQueries[1]))
+    filteringObj['word_count'] = 1
+
+  if (queryString.includes(supportedQueries[2]))
+    filteringObj['word_count'] = queryString.match(/\d+/)[0]
+
+  if (queryString.includes(supportedQueries[3]))
+    filteringObj['min_length'] = queryString.match(/\d+/)[0]
+
+  if (queryString.includes(supportedQueries[4]))
+    filteringObj['contains_character'] = 'a'
+
+  if (queryString.includes(supportedQueries[5]))
+    filteringObj['contains_character'] = 'e'
+
+  if (queryString.includes(supportedQueries[6]))
+    filteringObj['contains_character'] = 'i'
+
+  if (queryString.includes(supportedQueries[7]))
+    filteringObj['contains_character'] = 'o'
+
+  if (
+      queryString.includes(supportedQueries[8]) || 
+      queryString.includes(supportedQueries[9])
+    ) {
+      filteringObj['contains_character'] = 'u'
+    }
+
+  if (queryString.includes(supportedQueries[10]))
+    filteringObj['contains_character'] = queryString.match(/\b[a-zA-Z]\b/)
+
+  return filteringObj
+}
+
 module.exports = {
   is_palindrome,
   countUniqueCharacter,
@@ -91,5 +147,6 @@ module.exports = {
   createCharFreqMap,
   stringExist,
   wordCount,
-  formatString
+  formatString,
+  obtainFilter
 }
