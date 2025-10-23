@@ -127,20 +127,14 @@ stringAnalyzerRoutes
 
     const foundStrings = findQueryBasedStrings(queryString)
 
-    if (foundStrings === -1) {
-      return res.status(400).send({
-        error: 'Invalid query parameter values or types'
-      })
-    }
-
     let formattedFoundStrings = []
 
-    if (foundStrings.length > 0) {
+    if (foundStrings !== -1 && foundStrings.length > 0) {
       formattedFoundStrings = foundStrings
         .map(foundString => formatString(foundString))
     }
 
-    res.status(200).json(formattedFoundStrings)
+    res.status(200).json({data: formattedFoundStrings})
 
   })
 
@@ -172,7 +166,7 @@ stringAnalyzerRoutes
         .map(foundString => formatString(foundString))
     }
 
-    res.status(200).json(formattedFoundStrings)
+    res.status(200).json({data: formattedFoundStrings})
   })
 
 stringAnalyzerRoutes

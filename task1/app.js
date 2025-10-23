@@ -2,7 +2,6 @@ require('dotenv').config()
 const express = require('express')
 
 const { stringAnalyzerRoutes } = require('./controllers/string_analyzer')
-// console.log('app module loading after stringAnalyzerRoute...');
 
 const app = express()
 
